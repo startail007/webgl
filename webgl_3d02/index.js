@@ -60,20 +60,30 @@ function main() {
 
     var fieldOfViewRadians = degToRad(60);
 
-    init();
-    drawScene();
-    loop();
     var angleX = 0;
     var angleY = 0;
     var angleZ = 0;
     var weight = 0;
+    var cameraradius = 700;    
+    var _cameraradius = cameraradius;
+    init();
+    drawScene();
+    loop();
     canvas.addEventListener('mousemove', (e) => {
         var x = e.clientX;
         var y = e.clientY;
         var xx = gl.canvas.width * 0.5 - x;
         var yy = gl.canvas.height * 0.5 - y;
         weight = (xx > 0 ? 1 : -1) * 4 * EasingFunctions.easeInCubic(Math.min(1, Math.abs(xx) / 100));
-        angleX = (yy > 0 ? 1 : -1) * 60 * EasingFunctions.easeInQuad(Math.min(1, Math.abs(yy) / 100));
+        angleX = (yy > 0 ? 1 : -1) * 60 * Math.min(1, Math.abs(yy) / 100);
+    });
+    canvas.addEventListener('wheel', (e) => {
+        var delta = e.deltaY || e.wheelDeltaY;
+        if (delta != 0) {
+            delta = 50 * delta / Math.abs(delta);
+            _cameraradius += delta;
+            _cameraradius = Math.max(200, Math.min(1000, _cameraradius));
+        }
     });
     var lastRender = new Date();
 
@@ -84,49 +94,49 @@ function main() {
         lastRender = temp;
         var fps = (1000 / delta).toFixed(0);
         document.getElementById('fps').innerHTML = fps + " fps";
-
+        cameraradius += (_cameraradius-cameraradius)/10;
         requestAnimationFrame(loop);
         angleY += weight;
         angleY %= 360;
-        angleZ += 5;
+        angleZ += 4;
         angleZ %= 360;
         drawScene();
     }
 
     function init() {
-
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-        gl.enable(gl.CULL_FACE);
-
-        gl.enable(gl.DEPTH_TEST);
-
         gl.useProgram(program);
 
         gl.enableVertexAttribArray(positionLocation);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 
-        gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0)
+        gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
 
         gl.enableVertexAttribArray(colorLocation);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
 
-        gl.vertexAttribPointer(colorLocation, 3, gl.UNSIGNED_BYTE, true, 0, 0)
+        gl.vertexAttribPointer(colorLocation, 3, gl.UNSIGNED_BYTE, true, 0, 0);
     }
 
     function drawScene() {
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
+        gl.clearColor(0.0, 0.0, 0.0, 1.0); // 設定為全黑
+        gl.clearDepth(1.0);
+
+        gl.enable(gl.CULL_FACE);
+        gl.enable(gl.DEPTH_TEST);
+        gl.depthFunc(gl.LEQUAL);
+
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         var projectionMatrix = m4.perspective(fieldOfViewRadians, gl.canvas.clientWidth / gl.canvas.clientHeight, 1, 2000);
 
-        var radius = 700;
+
         var cameraMatrix = m4.yRotation(degToRad(angleY));
         cameraMatrix = m4.xRotate(cameraMatrix, degToRad(angleX));
-        cameraMatrix = m4.translate(cameraMatrix, 0, 0, radius);
+        cameraMatrix = m4.translate(cameraMatrix, 0, 0, cameraradius);
 
         var viewMatrix = m4.inverse(cameraMatrix);
 
@@ -138,11 +148,10 @@ function main() {
                 var xx = ((Math.abs(j) % 2) * 0.5 + i) * rr * Math.sqrt(3);
                 var yy = 1.5 * j * rr;
                 var r = Math.sqrt(xx * xx + yy * yy);
-                var t = EasingFunctions.easeOutQuart(1 - Math.min(1, r / 270));
-                var matrix = m4.translate(viewProjectionMatrix, xx, t * 20 * (1 + Math.cos(degToRad(2 * r + angleZ))), yy);
+                var t = EasingFunctions.easeInQuart(1 - Math.min(1, r / 300 / 2));
+                var matrix = m4.translate(viewProjectionMatrix, xx, t * 120 * (0 + Math.cos(degToRad(2 * r + angleZ))), yy);
                 gl.uniformMatrix4fv(matrixLocation, false, matrix);
                 gl.drawArrays(gl.TRIANGLES, 0, geometry.length);
-
             }
         }
         //gl.flush();
@@ -151,7 +160,7 @@ function main() {
 }
 
 function setGeometry(gl) {
-    var h = 20;
+    var h = 11;
     var r = 5.5;
     var ax0 = r * 0;
     var ax1 = r * Math.sqrt(3) * 0.5;
