@@ -132,13 +132,13 @@ function main() {
 
         var viewProjectionMatrix = m4.multiply(projectionMatrix, viewMatrix);
 
-        var rr = 10;
-        for (var j = -20; j <= 20; j++) {
-            for (var i = -18; i <= 18 - Math.abs(j) % 2; i++) {
+        var rr = 6;
+        for (var j = -30; j <= 30; j++) {
+            for (var i = -27; i <= 27 - Math.abs(j) % 2; i++) {
                 var xx = ((Math.abs(j) % 2) * 0.5 + i) * rr * Math.sqrt(3);
                 var yy = 1.5 * j * rr;
                 var r = Math.sqrt(xx * xx + yy * yy);
-                var t = EasingFunctions.easeOutQuart(1 - Math.min(1, r / 300));
+                var t = EasingFunctions.easeOutQuart(1 - Math.min(1, r / 270));
                 var matrix = m4.translate(viewProjectionMatrix, xx, t * 20 * (1 + Math.cos(degToRad(2 * r + angleZ))), yy);
                 gl.uniformMatrix4fv(matrixLocation, false, matrix);
                 gl.drawArrays(gl.TRIANGLES, 0, geometry.length);
@@ -152,7 +152,7 @@ function main() {
 
 function setGeometry(gl) {
     var h = 20;
-    var r = 8;
+    var r = 5.5;
     var ax0 = r * 0;
     var ax1 = r * Math.sqrt(3) * 0.5;
     var ax2 = r * Math.sqrt(3) * 0.5;
